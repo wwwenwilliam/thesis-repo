@@ -83,7 +83,7 @@ def run_benchmark(
             vectors_A, vectors_B, threshold,
             n_lists=256,
             n_probes=32,
-            k_candidates=50,
+            k_candidates=256,
             batch_size=100_000,
             self_join=self_join
         )
