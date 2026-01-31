@@ -83,7 +83,7 @@ def run_benchmark(
             vectors_A, vectors_B, threshold,
             n_lists=256,
             n_probes=32,
-            k_candidates=10,
+            k_candidates=50,
             batch_size=100_000,
             self_join=self_join
         )
@@ -99,7 +99,7 @@ def run_benchmark(
         pairs = run_threshold_similarity_join(
             vectors_A, vectors_B, threshold,
             n_clusters=256,
-            k_db_candidates=1024,
+            k_db_candidates=2048,
             batch_size=100_000,
             self_join=self_join
         )
@@ -138,6 +138,10 @@ def compare_results(results: List[BenchmarkResult], ground_truth_name: str = 'br
         print(f"  Time: {r.time_s:.4f}s")
         print(f"  Pairs: {r.pair_count}")
         
+        if r.pairs:
+            dists = [d for _, _, d in r.pairs]
+            print(f"  Dists: min={min(dists):.5f} max={max(dists):.5f} avg={sum(dists)/len(dists):.5f}")
+        
         if gt and r.name != ground_truth_name and gt_set:
             r_set = set((a, b) for a, b, _ in r.pairs)
             recall = len(r_set & gt_set) / len(gt_set) if gt_set else 0
@@ -170,9 +174,9 @@ def main():
     print("Loading SIFT data...")
     vectors = load_sift(1_000_000)
     print(f"Loaded {vectors.shape[0]} vectors of dim {vectors.shape[1]}")
-    W
+    
     # Use a threshold that gives reasonable pair count
-    threshold = 2.5  # squared L2, based on sample output (mean~26k)
+    threshold = 30000.0  # squared L2, based on sample output (mean~26k)
     
     results = run_benchmark(
         vectors_A=vectors,
