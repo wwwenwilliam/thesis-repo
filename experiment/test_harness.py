@@ -14,7 +14,9 @@ class BenchmarkResult:
     name: str
     time_s: float
     pair_count: int
-    pairs: List[Tuple[int, int, float]]
+    pairs_a: np.ndarray   # array of A indices
+    pairs_b: np.ndarray   # array of B indices
+    pairs_dist: np.ndarray  # array of distances
 
 
 def load_fvecs(filename: str) -> cp.ndarray:
@@ -74,52 +76,55 @@ def run_benchmark(
     print(f"\n{'='*60}")
     print(f"Benchmark: N={N}, M={M}, D={D}, threshold={threshold}")
     print(f"{'='*60}")
+
+    if 'centroid' in methods:
+        print("\nCentroid Clustering")
+        cp.cuda.Stream.null.synchronize()
+        t0 = time.perf_counter()
+        a_idx, b_idx, dists = run_threshold_similarity_join(
+            vectors_A, vectors_B, threshold,
+            n_clusters=1024,
+            k_db_candidates=8192,
+            batch_size=1_000_000,
+            self_join=self_join
+        )
+        cp.cuda.Stream.null.synchronize()
+        elapsed = time.perf_counter() - t0
+        n_pairs = len(a_idx)
+        print(f"Centroid finished in {elapsed:.4f}s found: {n_pairs} pairs")
+        results.append(BenchmarkResult('centroid', elapsed, n_pairs, a_idx, b_idx, dists))
     
     if 'ivf' in methods:
-        print("\n[1/3] IVF-Flat")
+        print("\nIVF-Flat")
         cp.cuda.Stream.null.synchronize()
         t0 = time.perf_counter()
-        pairs = ivf_threshold_join(
+        a_idx, b_idx, dists = ivf_threshold_join(
             vectors_A, vectors_B, threshold,
-            n_lists=256,
+            n_lists=512,
             n_probes=32,
-            k_candidates=256,
-            batch_size=100_000,
+            k_candidates=512,
+            batch_size=250_000,
             self_join=self_join
         )
         cp.cuda.Stream.null.synchronize()
         elapsed = time.perf_counter() - t0
-        print(f"IVF finished in {elapsed:.4f}s found: {len(pairs)} pairs")
-        results.append(BenchmarkResult('ivf', elapsed, len(pairs), pairs))
-    
-    if 'centroid' in methods:
-        print("\n[2/3] Centroid Clustering")
-        cp.cuda.Stream.null.synchronize()
-        t0 = time.perf_counter()
-        pairs = run_threshold_similarity_join(
-            vectors_A, vectors_B, threshold,
-            n_clusters=256,
-            k_db_candidates=2048,
-            batch_size=100_000,
-            self_join=self_join
-        )
-        cp.cuda.Stream.null.synchronize()
-        elapsed = time.perf_counter() - t0
-        print(f"Centroid finished in {elapsed:.4f}s found: {len(pairs)} pairs")
-        results.append(BenchmarkResult('centroid', elapsed, len(pairs), pairs))
+        n_pairs = len(a_idx)
+        print(f"IVF finished in {elapsed:.4f}s found: {n_pairs} pairs")
+        results.append(BenchmarkResult('ivf', elapsed, n_pairs, a_idx, b_idx, dists))
 
     if 'brute_force' in methods:
-        print("\n[3/3] Brute Force")
+        print("\nBrute Force")
         cp.cuda.Stream.null.synchronize()
         t0 = time.perf_counter()
-        pairs = brute_force_threshold_join(
+        a_idx, b_idx, dists = brute_force_threshold_join(
             vectors_A, vectors_B, threshold,
-            batch_size=10_000, self_join=self_join
+            batch_size=20_000, self_join=self_join
         )
         cp.cuda.Stream.null.synchronize()
         elapsed = time.perf_counter() - t0
-        print(f"Brute force finished in {elapsed:.4f}s found: {len(pairs)} pairs")
-        results.append(BenchmarkResult('brute_force', elapsed, len(pairs), pairs))
+        n_pairs = len(a_idx)
+        print(f"Brute force finished in {elapsed:.4f}s found: {n_pairs} pairs")
+        results.append(BenchmarkResult('brute_force', elapsed, n_pairs, a_idx, b_idx, dists))
     
     return results
 
@@ -131,19 +136,18 @@ def compare_results(results: List[BenchmarkResult], ground_truth_name: str = 'br
     print(f"{'='*60}")
     
     gt = next((r for r in results if r.name == ground_truth_name), None)
-    gt_set = set((a, b) for a, b, _ in gt.pairs) if gt else None
+    gt_set = set(zip(gt.pairs_a.tolist(), gt.pairs_b.tolist())) if gt and gt.pair_count > 0 else None
     
     for r in results:
         print(f"\n{r.name}:")
         print(f"  Time: {r.time_s:.4f}s")
         print(f"  Pairs: {r.pair_count}")
         
-        if r.pairs:
-            dists = [d for _, _, d in r.pairs]
-            print(f"  Dists: min={min(dists):.5f} max={max(dists):.5f} avg={sum(dists)/len(dists):.5f}")
+        if r.pair_count > 0:
+            print(f"  Dists: min={r.pairs_dist.min():.5f} max={r.pairs_dist.max():.5f} avg={r.pairs_dist.mean():.5f}")
         
-        if gt and r.name != ground_truth_name and gt_set:
-            r_set = set((a, b) for a, b, _ in r.pairs)
+        if gt and r.name != ground_truth_name and gt_set and r.pair_count > 0:
+            r_set = set(zip(r.pairs_a.tolist(), r.pairs_b.tolist()))
             recall = len(r_set & gt_set) / len(gt_set) if gt_set else 0
             print(f"  Recall vs {ground_truth_name}: {recall:.4f}")
 
@@ -161,39 +165,66 @@ def load_fvecs(path: str) -> np.ndarray:
     return vectors
 
 
-def load_sift(max_vectors: int = None) -> cp.ndarray:
-    """Load SIFT-1M base vectors."""
+def load_u8bin(path: str, max_vectors: int = None) -> np.ndarray:
+    """Load .u8bin format file (8-byte header + row-major uint8 data)."""
+    with open(path, 'rb') as f:
+        n = int.from_bytes(f.read(4), 'little')
+        d = int.from_bytes(f.read(4), 'little')
+    print(f"u8bin header: {n:,} vectors x {d}D")
+    if max_vectors:
+        n = min(n, max_vectors)
+    # Memory-map to avoid loading entire file into RAM
+    data = np.memmap(path, dtype='uint8', mode='r', offset=8, shape=(n, d))
+    vectors = np.array(data[:n], dtype=np.float32)
+    print(f"Loaded {vectors.shape[0]:,} x {vectors.shape[1]} from {path}")
+    return vectors
+
+
+def load_sift(max_vectors: int = None, gpu: bool = True) -> cp.ndarray:
+    """Load SIFT-1M base vectors. Set gpu=False for out-of-memory workflows."""
     path = "/home/william/thesis_ws/thesis-repo/datasets/sift/sift_base.fvecs"
     vectors = load_fvecs(path)
     if max_vectors:
         vectors = vectors[:max_vectors]
-    return cp.asarray(vectors, dtype=cp.float32)
+    if gpu:
+        return cp.asarray(vectors, dtype=cp.float32)
+    return vectors.astype(np.float32)
+
+
+def load_sift_100m(max_vectors: int = None, gpu: bool = False) -> np.ndarray:
+    """Load SIFT-100M from u8bin. Default gpu=False since 100M x 128 x 4 = 51GB won't fit in VRAM."""
+    path = "/home/william/thesis_ws/datasets/sift/learn.100M.u8bin"
+    vectors = load_u8bin(path, max_vectors=max_vectors)
+    if gpu:
+        return cp.asarray(vectors, dtype=cp.float32)
+    return vectors
 
 
 def main():
     print("Loading SIFT data...")
-    vectors = load_sift(1_000_000)
+    vectors = load_sift_100m(1_000_000)
     print(f"Loaded {vectors.shape[0]} vectors of dim {vectors.shape[1]}")
     
     # Use a threshold that gives reasonable pair count
-    threshold = 30000.0  # squared L2, based on sample output (mean~26k)
+    threshold = 20_000.0
     
     results = run_benchmark(
         vectors_A=vectors,
         vectors_B=vectors,
         threshold=threshold,
         self_join=True,
-        methods=['ivf', 'centroid', 'brute_force']
+        methods=['centroid', 'ivf', 'brute_force']
     )
     
     compare_results(results)
     
     # Show top pairs from each method
     for r in results:
-        if r.pairs:
+        if r.pair_count > 0:
+            top_idx = np.argsort(r.pairs_dist)[:5]
             print(f"\n{r.name} top 5 pairs:")
-            for a, b, d in sorted(r.pairs, key=lambda x: x[2])[:5]:
-                print(f"  A[{a}] <-> B[{b}] dist={d:.5f}")
+            for i in top_idx:
+                print(f"  A[{r.pairs_a[i]}] <-> B[{r.pairs_b[i]}] dist={r.pairs_dist[i]:.5f}")
 
 
 if __name__ == "__main__":
