@@ -1,6 +1,7 @@
 import time
 import cupy as cp
 import numpy as np
+import rmm
 from cuvs.neighbors import brute_force
 from cuvs.cluster import kmeans
 
@@ -17,7 +18,7 @@ def _fused_l2_dist(dot_product, q_norms, a_norms):
     return cp.maximum(d, 0.0)
 
 
-def run_threshold_similarity_join(vectors_A, vectors_B, threshold, n_clusters, k_db_candidates, batch_size, self_join):
+def run_threshold_similarity_join(vectors_A, vectors_B, threshold, n_clusters, k_db_candidates, batch_size, self_join, return_chunks=False):
     """
     Centroid-based similarity join with threshold.
     
@@ -30,10 +31,14 @@ def run_threshold_similarity_join(vectors_A, vectors_B, threshold, n_clusters, k
     print(f"  params: n_clusters={n_clusters}, k_db_candidates={k_db_candidates}, batch_size={batch_size:,}")
     N, M = vectors_A.shape[0], vectors_B.shape[0]
     
-    # Accumulate results on GPU, batched per block-pair to avoid memory buildup
-    gpu_results_a = []
-    gpu_results_b = []
-    gpu_results_dist = []
+    # Prevent RMM pool from hoarding GPU memory (kmeans grows the pool
+    # and never releases it, starving subsequent cudaMalloc calls)
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
+    
+    # Accumulate results on CPU to avoid GPU memory buildup at scale
+    cpu_results_a = []
+    cpu_results_b = []
+    cpu_results_dist = []
     
     # Instrumentation
     total_pairs_compared = 0
@@ -128,9 +133,9 @@ def run_threshold_similarity_join(vectors_A, vectors_B, threshold, n_clusters, k
             
             # Batch transfer per block-pair
             if block_a:
-                gpu_results_a.append(cp.concatenate(block_a))
-                gpu_results_b.append(cp.concatenate(block_b))
-                gpu_results_dist.append(cp.concatenate(block_d))
+                cpu_results_a.append(cp.concatenate(block_a).get())
+                cpu_results_b.append(cp.concatenate(block_b).get())
+                cpu_results_dist.append(cp.concatenate(block_d).get())
     
     cp.cuda.Stream.null.synchronize()
     peak_mem = max(peak_mem, _gpu_mem_used_mb())
@@ -141,12 +146,14 @@ def run_threshold_similarity_join(vectors_A, vectors_B, threshold, n_clusters, k
     print(f"  pairs compared: {total_pairs_compared:,} ({total_pairs_compared/1e9:.2f}B)")
     print(f"  peak GPU memory: {peak_mem:.0f} MB")
     
-    if not gpu_results_a:
+    if return_chunks:
+        return cpu_results_a, cpu_results_b, cpu_results_dist
+    
+    if not cpu_results_a:
         return np.empty(0, dtype=np.int32), np.empty(0, dtype=np.int32), np.empty(0, dtype=np.float32)
     
-    # Single bulk transfer to CPU
-    all_a = cp.concatenate(gpu_results_a).get()
-    all_b = cp.concatenate(gpu_results_b).get()
-    all_dist = cp.concatenate(gpu_results_dist).get()
+    all_a = np.concatenate(cpu_results_a)
+    all_b = np.concatenate(cpu_results_b)
+    all_dist = np.concatenate(cpu_results_dist)
     
     return all_a, all_b, all_dist

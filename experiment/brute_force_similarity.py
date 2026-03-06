@@ -15,15 +15,15 @@ def _gpu_mem_used_mb():
     return (total - free) / 1e6
 
 
-def brute_force_threshold_join(vectors_A, vectors_B, threshold, batch_size, self_join):
+def brute_force_threshold_join(vectors_A, vectors_B, threshold, batch_size, self_join, return_chunks=False):
     """GPU brute force similarity join with threshold."""
     print(f"  params: batch_size={batch_size:,}")
     N, M = vectors_A.shape[0], vectors_B.shape[0]
     
-    # Accumulate results on GPU to avoid per-tile sync from .get()
-    gpu_results_a = []
-    gpu_results_b = []
-    gpu_results_dist = []
+    # Accumulate results on CPU per-tile to avoid GPU memory buildup
+    cpu_results_a = []
+    cpu_results_b = []
+    cpu_results_dist = []
     
     t0 = time.perf_counter()
     total_pairs_compared = 0
@@ -63,23 +63,23 @@ def brute_force_threshold_join(vectors_A, vectors_B, threshold, batch_size, self
             b_local, a_local = cp.where(mask)
             
             if b_local.size > 0:
-                # Keep results on GPU; transfer to CPU in bulk at the end
-                gpu_results_a.append(a_local + a_start)
-                gpu_results_b.append(b_local + b_start)
-                gpu_results_dist.append(dists[b_local, a_local])
+                # Transfer to CPU immediately to free GPU memory
+                cpu_results_a.append((a_local + a_start).get())
+                cpu_results_b.append((b_local + b_start).get())
+                cpu_results_dist.append(dists[b_local, a_local].get())
+            
+            peak_mem = max(peak_mem, _gpu_mem_used_mb())
     
     cp.cuda.Stream.null.synchronize()
-    peak_mem = max(peak_mem, _gpu_mem_used_mb())
     print(f"Brute force: {time.perf_counter() - t0:.4f}s")
+    n_pairs = sum(len(c) for c in cpu_results_a)
     print(f"  {n_tiles} tiles, pairs compared: {total_pairs_compared:,} ({total_pairs_compared/1e9:.2f}B)")
-    print(f"  peak GPU memory: {peak_mem:.0f} MB")
+    print(f"  {n_pairs:,} pairs found, peak GPU memory: {peak_mem:.0f} MB")
     
-    if not gpu_results_a:
+    if return_chunks:
+        return cpu_results_a, cpu_results_b, cpu_results_dist
+    
+    if not cpu_results_a:
         return np.empty(0, dtype=np.int32), np.empty(0, dtype=np.int32), np.empty(0, dtype=np.float32)
     
-    # Single bulk transfer to CPU
-    all_a = cp.concatenate(gpu_results_a).get()
-    all_b = cp.concatenate(gpu_results_b).get()
-    all_dist = cp.concatenate(gpu_results_dist).get()
-    
-    return all_a, all_b, all_dist
+    return np.concatenate(cpu_results_a), np.concatenate(cpu_results_b), np.concatenate(cpu_results_dist)

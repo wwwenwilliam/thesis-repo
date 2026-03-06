@@ -78,3 +78,50 @@ brute_force top 5 pairs:
   A[982504] <-> B[982503] dist=40.00000
 
 ```
+
+```
+Loading SIFT data...
+u8bin header: 100,000,000 vectors x 128D
+Loaded 10,000,000 x 128 from /home/william/thesis_ws/datasets/sift/learn.100M.u8bin
+Loaded 10000000 vectors of dim 128
+Shuffled vectors (seed=42)
+
+============================================================
+Benchmark: N=10000000, M=10000000, D=128, threshold=20000.0
+============================================================
+
+Centroid Clustering
+  params: n_clusters=1024, k_db_candidates=8192, batch_size=1,000,000
+Centroid join: 290.0236s
+  kmeans+assign: 171.70s | centroid search: 17.80s | brute force: 86.61s
+  55 block pairs, 56320 cluster iterations
+  pairs compared: 450,560,000,000 (450.56B)
+  peak GPU memory: 2300 MB
+Centroid finished in 290.0281s found: 1238598732 pairs
+  -> saved 1,238,598,732 pairs to ./results/centroid
+
+
+Loading SIFT data...
+u8bin header: 100,000,000 vectors x 128D
+Loaded 10,000,000 x 128 from /home/william/thesis_ws/datasets/sift/learn.100M.u8bin
+Loaded 10000000 vectors of dim 128
+Shuffled vectors (seed=42)
+
+============================================================
+Benchmark: N=10000000, M=10000000, D=128, threshold=20000.0
+============================================================
+
+Brute Force
+  params: batch_size=20,000
+Brute force: 4036.2495s
+  125250 tiles, pairs compared: 50,100,000,000,000 (50100.00B)
+  1,247,281,310 pairs found, peak GPU memory: 8468 MB
+Brute force finished in 4036.2996s found: 1247281310 pairs
+  -> saved 1,247,281,310 pairs to ./results/brute_force
+
+============================================================
+Results Summary
+============================================================
+
+
+```
