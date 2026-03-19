@@ -1,4 +1,5 @@
 import cupy as cp
+from cupyx.profiler import time_range
 import numpy as np
 from cuvs.neighbors import cagra, ivf_pq, ivf_flat, brute_force
 
@@ -45,57 +46,62 @@ def _cuvs_knn_join(chunk_A, chunk_B, threshold, self_join_diagonal, index_type):
                 np.empty(0, dtype=np.float32),
                 {})
 
-    gpu_A = cp.asarray(chunk_A)
-    # Check if self_join_diagonal and same sizes - if so, it's the exact same data
-    if self_join_diagonal:
-        gpu_B = gpu_A
-    else:
-        gpu_B = cp.asarray(chunk_B)
+    with time_range(f"cuvs_knn/{index_type}", color_id=0):
+        gpu_A = cp.asarray(chunk_A)
+        # Check if self_join_diagonal and same sizes - if so, it's the exact same data
+        if self_join_diagonal:
+            gpu_B = gpu_A
+        else:
+            gpu_B = cp.asarray(chunk_B)
 
-    # Build the index on A
-    import time
-    cp.cuda.Stream.null.synchronize()
-    t0 = time.time()
-    index = _build_index(index_type, gpu_A)
-    cp.cuda.Stream.null.synchronize()
-    build_time = time.time() - t0
+        # Build the index on A
+        import time
+        with time_range("cuvs_knn/build_index", color_id=1):
+            cp.cuda.Stream.null.synchronize()
+            t0 = time.time()
+            index = _build_index(index_type, gpu_A)
+            cp.cuda.Stream.null.synchronize()
+            build_time = time.time() - t0
 
-    # Search queries B in index A
-    distances, indices = _search_index(index_type, index, gpu_B)
+        # Search queries B in index A
+        with time_range("cuvs_knn/search", color_id=2):
+            distances, indices = _search_index(index_type, index, gpu_B)
 
-    # distances is shape (nB, k), indices is shape (nB, k)
-    # The arrays returned by cuVS might be device_ndarrays, we need to convert them to cupy arrays.
-    distances = cp.asarray(distances)
-    indices = cp.asarray(indices)
+            # distances is shape (nB, k), indices is shape (nB, k)
+            # The arrays returned by cuVS might be device_ndarrays, we need to convert them to cupy arrays.
+            distances = cp.asarray(distances)
+            indices = cp.asarray(indices)
 
-    # Filter by threshold
-    mask = distances <= threshold
+        # Filter by threshold
+        with time_range("cuvs_knn/filter", color_id=3):
+            mask = distances <= threshold
 
-    # Create b_indices using repeat/tile equivalent logic
-    nB = gpu_B.shape[0]
-    b_idx_matrix = cp.arange(nB, dtype=cp.int64)[:, None]
-    b_idx_matrix = cp.broadcast_to(b_idx_matrix, indices.shape)
+            # Create b_indices using repeat/tile equivalent logic
+            nB = gpu_B.shape[0]
+            b_idx_matrix = cp.arange(nB, dtype=cp.int64)[:, None]
+            b_idx_matrix = cp.broadcast_to(b_idx_matrix, indices.shape)
 
-    # Apply mask
-    b_local = b_idx_matrix[mask]
-    a_local = indices[mask]
-    result_dists = distances[mask]
+            # Apply mask
+            b_local = b_idx_matrix[mask]
+            a_local = indices[mask]
+            result_dists = distances[mask]
 
-    # self-join diagonal filtering
-    if self_join_diagonal:
-        diag_mask = a_local > b_local
-        b_local = b_local[diag_mask]
-        a_local = a_local[diag_mask]
-        result_dists = result_dists[diag_mask]
+            # self-join diagonal filtering
+            if self_join_diagonal:
+                diag_mask = a_local > b_local
+                b_local = b_local[diag_mask]
+                a_local = a_local[diag_mask]
+                result_dists = result_dists[diag_mask]
 
-    # The number of pairs subjected to the threshold filter is the size of the distances matrix (nB * k)
-    pairs_compared = distances.size
+            # The number of pairs subjected to the threshold filter is the size of the distances matrix (nB * k)
+            pairs_compared = distances.size
 
-    # Convert to numpy
-    return (a_local.get().astype(np.int64),
-            b_local.get().astype(np.int64),
-            result_dists.get().astype(np.float32),
-            {"build_time_s": build_time, "pairs_compared": int(pairs_compared)})
+        # Convert to numpy
+        with time_range("cuvs_knn/collect_results", color_id=4):
+            return (a_local.get().astype(np.int64),
+                    b_local.get().astype(np.int64),
+                    result_dists.get().astype(np.float32),
+                    {"build_time_s": build_time, "pairs_compared": int(pairs_compared)})
 
 
 def cuvs_cagra_join(chunk_A, chunk_B, threshold, self_join_diagonal=False):

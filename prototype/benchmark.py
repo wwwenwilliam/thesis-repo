@@ -12,6 +12,7 @@ import os
 import time
 
 import numpy as np
+from cupyx.profiler import time_range
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -31,9 +32,9 @@ DATASET_B_PATH = ""            # leave empty for self-join
 DATASET_B_FMT  = "u8bin"
 NUM_VECTORS_B  = 100_000
 
-OUTPUT_DIR   = "./results/run"
+OUTPUT_DIR   = "./results/1M"
 THRESHOLD    = 10_000.0
-METHODS      = ["centroid_join", "brute_force", "cuvs_ivf_flat", "cuvs_brute_force"]
+METHODS      = ["centroid_join", "cuvs_ivf_flat"]
 
 ALGORITHMS = {
     "brute_force": (brute_force_join, simple_batch, 25_000),
@@ -87,16 +88,17 @@ def main():
         join_fn, batch_fn, batch_size = ALGORITHMS[method_name]
 
         t0 = time.perf_counter()
-        result_dir, total_pairs, n_tiles, pairs_compared, batch_metadata = batch_fn(
-            dataset_A=dataset_A,
-            dataset_B=dataset_B,
-            join_algorithm=join_fn,
-            threshold=THRESHOLD,
-            batch_size=batch_size,
-            self_join=self_join,
-            output_dir=OUTPUT_DIR,
-            method_name=method_name,
-        )
+        with time_range(f"benchmark/{method_name}", color_id=7):
+            result_dir, total_pairs, n_tiles, pairs_compared, batch_metadata = batch_fn(
+                dataset_A=dataset_A,
+                dataset_B=dataset_B,
+                join_algorithm=join_fn,
+                threshold=THRESHOLD,
+                batch_size=batch_size,
+                self_join=self_join,
+                output_dir=OUTPUT_DIR,
+                method_name=method_name,
+            )
         elapsed = time.perf_counter() - t0
 
         metadata = {

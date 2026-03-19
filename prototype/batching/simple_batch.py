@@ -8,6 +8,7 @@ Simplest batching strategy:
 import os
 
 import numpy as np
+from cupyx.profiler import time_range
 
 
 def simple_batch(dataset_A, dataset_B, join_algorithm, threshold,
@@ -61,10 +62,11 @@ def simple_batch(dataset_A, dataset_B, join_algorithm, threshold,
 
                 is_diagonal = self_join and (a_start == b_start)
 
-                result = join_algorithm(
-                    chunk_A, chunk_B, threshold,
-                    self_join_diagonal=is_diagonal
-                )
+                with time_range(f"batch/tile_{n_tiles}", color_id=6):
+                    result = join_algorithm(
+                        chunk_A, chunk_B, threshold,
+                        self_join_diagonal=is_diagonal
+                    )
                 
                 if len(result) == 4:
                     a_idx, b_idx, dists, extra_stats = result
