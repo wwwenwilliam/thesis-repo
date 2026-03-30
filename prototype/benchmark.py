@@ -27,20 +27,20 @@ from joins.centroid_join import centroid_join
 from util.process_results import process_results, dump_statistics
 
 # ── Configuration ───────────────────────────────────────────────
-DATASET_A_PATH = "/home/william/thesis_ws/thesis-repo/datasets/DEEP/learn.350M.fbin"
-DATASET_A_FMT  = "fbin"
+DATASET_A_PATH = "/home/william/thesis_ws/thesis-repo/datasets/sift/bigann_learn.bvecs"
+DATASET_A_FMT  = "bvecs"
 NUM_VECTORS_A  = 1_000_000
 
 DATASET_B_PATH = ""            # leave empty for self-join
 DATASET_B_FMT  = "bvecs"
 NUM_VECTORS_B  = 1_000_000
 
-OUTPUT_DIR   = "./results/DEEP/1M"
-METHODS      = ["cuvs_ivf_flat"]
+OUTPUT_DIR   = "./results/SIFT/SWEEP/80"  ## target ~80% recall
+METHODS      = ["brute_force", "cuvs_ivf_flat", "centroid_join", "cuvs_cagra"]
 
 # ── Unified parameters ──────────────────────────────────────────
 PARAMS = Params(
-    threshold=0.01,
+    threshold=512.0,
 )
 
 # ── Algorithm registry ──────────────────────────────────────────

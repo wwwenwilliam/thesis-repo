@@ -10,7 +10,10 @@ def _build_index(index_type, dataset, params):
         idx_params = cagra.IndexParams(metric="sqeuclidean", build_algo="nn_descent")
         return cagra.build(idx_params, dataset)
     elif index_type == 'ivf_flat':
-        idx_params = ivf_flat.IndexParams(metric="sqeuclidean")
+        idx_params = ivf_flat.IndexParams(
+            metric="sqeuclidean",
+            n_lists=params.cuvs_ivf_flat.n_lists,
+        )
         return ivf_flat.build(idx_params, dataset)
     elif index_type == 'brute_force':
         return brute_force.build(dataset, metric="sqeuclidean")
@@ -21,10 +24,16 @@ def _build_index(index_type, dataset, params):
 def _search_index(index_type, index, queries, params):
     if index_type == 'cagra':
         k = params.cuvs_cagra.k
-        return cagra.search(cagra.SearchParams(), index, queries, k)
+        search_params = cagra.SearchParams(
+            itopk_size=max(params.cuvs_cagra.itopk_size, k)
+        )
+        return cagra.search(search_params, index, queries, k)
     elif index_type == 'ivf_flat':
         k = params.cuvs_ivf_flat.k
-        return ivf_flat.search(ivf_flat.SearchParams(), index, queries, k)
+        search_params = ivf_flat.SearchParams(
+            n_probes=params.cuvs_ivf_flat.n_probes
+        )
+        return ivf_flat.search(search_params, index, queries, k)
     elif index_type == 'brute_force':
         k = params.cuvs_brute_force.k
         return brute_force.search(index, queries, k)

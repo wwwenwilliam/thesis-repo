@@ -23,12 +23,15 @@ class BruteForceParams:
 class CuvsCagraParams:
     """Parameters for cuVS CAGRA join."""
     k: int = 64
+    itopk_size: int = 64       # internal top-k candidates during graph search
 
 
 @dataclass
 class CuvsIvfFlatParams:
     """Parameters for cuVS IVF-Flat join."""
     k: int = 64
+    n_lists: int = 1024        # number of IVF clusters to build
+    n_probes: int = 20         # number of clusters to probe during search
 
 
 @dataclass
@@ -76,7 +79,7 @@ class Params:
     batch_sizes: dict = field(default_factory=lambda: {
         "brute_force":       25_000,
         "cuvs_ivf_flat":     1_000_000,
-        "cuvs_cagra":        20_000,
+        "cuvs_cagra":        1_000_000,
         "cuvs_brute_force":  100_000,
         "centroid_join":     1_000_000,
         "centroid_batch":    25_000,

@@ -1,0 +1,62 @@
+{
+  "method": "cuvs_ivf_flat_k16_np20",
+  "base_method": "cuvs_ivf_flat",
+  "pair_count": 13578,
+  "time_s": 17.818726613000763,
+  "n_tiles": 1,
+  "total_pairs_compared": 16000000,
+  "self_join": true,
+  "N": 1000000,
+  "M": 1000000,
+  "D": 128,
+  "params": {
+    "threshold": 512.0,
+    "batch_sizes": {
+      "brute_force": 25000,
+      "cuvs_ivf_flat": 1000000,
+      "cuvs_cagra": 1000000,
+      "cuvs_brute_force": 100000,
+      "centroid_join": 1000000,
+      "centroid_batch": 25000,
+      "centroid_centroid": 1000000,
+      "cuvs_cagra_k16_itopk16": 1000000,
+      "cuvs_cagra_k16_itopk32": 1000000,
+      "cuvs_cagra_k16_itopk64": 1000000,
+      "cuvs_cagra_k16_itopk128": 1000000,
+      "cuvs_cagra_k32_itopk32": 1000000,
+      "cuvs_cagra_k32_itopk64": 1000000,
+      "cuvs_cagra_k32_itopk128": 1000000,
+      "cuvs_cagra_k64_itopk64": 1000000,
+      "cuvs_cagra_k64_itopk128": 1000000,
+      "cuvs_ivf_flat_k16_np2": 1000000,
+      "cuvs_ivf_flat_k16_np4": 1000000,
+      "cuvs_ivf_flat_k16_np8": 1000000,
+      "cuvs_ivf_flat_k16_np16": 1000000,
+      "cuvs_ivf_flat_k16_np20": 1000000
+    },
+    "brute_force": {},
+    "cuvs_cagra": {
+      "k": 64,
+      "itopk_size": 64
+    },
+    "cuvs_ivf_flat": {
+      "k": 16,
+      "n_probes": 20
+    },
+    "cuvs_brute_force": {
+      "k": 32
+    },
+    "centroid_join": {
+      "sample_fraction": 0.2,
+      "n_clusters": 1024,
+      "k_db_candidates": 32768,
+      "use_ivf": false
+    },
+    "simple_batch": {},
+    "centroid_batch": {
+      "sample_fraction": 0.25,
+      "centroid_threshold": 0.1
+    }
+  },
+  "build_time_s": 0.37237119674682617
+}
