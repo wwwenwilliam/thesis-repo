@@ -16,32 +16,43 @@ from cupyx.profiler import time_range
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from util.read_dataset import read_u8bin, read_fvecs
+from params import Params
+from util.read_dataset import read_u8bin, read_fvecs, read_fbin, read_bvecs
 from batching.simple_batch import simple_batch
+from batching.centroid_batch import centroid_batch
+
 from joins.brute_force import brute_force_join
-from joins.cuvs_knn import cuvs_cagra_join, cuvs_ivf_pq_join, cuvs_ivf_flat_join, cuvs_brute_force_join
+from joins.cuvs_knn import cuvs_cagra_join, cuvs_ivf_flat_join, cuvs_brute_force_join
 from joins.centroid_join import centroid_join
 from util.process_results import process_results, dump_statistics
 
 # ── Configuration ───────────────────────────────────────────────
-DATASET_A_PATH = "/home/william/thesis_ws/datasets/sift/learn.100M.u8bin"
-DATASET_A_FMT  = "u8bin"
-NUM_VECTORS_A  = 1_000_000
+DATASET_A_PATH = "/home/william/thesis_ws/thesis-repo/datasets/DEEP/learn.350M.fbin"
+DATASET_A_FMT  = "fbin"
+NUM_VECTORS_A  = 10_000_000
 
 DATASET_B_PATH = ""            # leave empty for self-join
-DATASET_B_FMT  = "u8bin"
-NUM_VECTORS_B  = 100_000
+DATASET_B_FMT  = "bvecs"
+NUM_VECTORS_B  = 1_000_000
 
-OUTPUT_DIR   = "./results/1M"
-THRESHOLD    = 10_000.0
-METHODS      = ["centroid_join", "cuvs_ivf_flat"]
+OUTPUT_DIR   = "./results/DEEP/10M"
+METHODS      = ["cuvs_ivf_flat"]
 
+# ── Unified parameters ──────────────────────────────────────────
+PARAMS = Params(
+    threshold=0.01,
+)
+
+# ── Algorithm registry ──────────────────────────────────────────
+# Maps method name -> (join_fn, batch_fn)
 ALGORITHMS = {
-    "brute_force": (brute_force_join, simple_batch, 25_000),
-    "cuvs_ivf_flat": (cuvs_ivf_flat_join, simple_batch, 100_000),
-    "cuvs_cagra": (cuvs_cagra_join, simple_batch, 20_000),
-    "cuvs_brute_force": (cuvs_brute_force_join, simple_batch, 100_000),
-    "centroid_join": (centroid_join, simple_batch, 1_000_000),
+    "brute_force":       (brute_force_join,       simple_batch),
+    "cuvs_ivf_flat":     (cuvs_ivf_flat_join,     simple_batch),
+    "cuvs_cagra":        (cuvs_cagra_join,        simple_batch),
+    "cuvs_brute_force":  (cuvs_brute_force_join,  simple_batch),
+    "centroid_join":     (centroid_join,           simple_batch),
+    "centroid_batch":    (brute_force_join,        centroid_batch),
+    "centroid_centroid": (centroid_join,           centroid_batch),
 }
 
 
@@ -50,6 +61,8 @@ def load_dataset(path, fmt, max_vectors=None):
     loaders = {
         "u8bin": read_u8bin,
         "fvecs": read_fvecs,
+        "fbin": read_fbin,
+        "bvecs": read_bvecs,
     }
     if fmt not in loaders:
         raise ValueError(f"Unknown format '{fmt}', expected one of {list(loaders)}")
@@ -85,7 +98,7 @@ def main():
             print(f"Skipping unknown method: {method_name}")
             continue
 
-        join_fn, batch_fn, batch_size = ALGORITHMS[method_name]
+        join_fn, batch_fn = ALGORITHMS[method_name]
 
         t0 = time.perf_counter()
         with time_range(f"benchmark/{method_name}", color_id=7):
@@ -93,11 +106,10 @@ def main():
                 dataset_A=dataset_A,
                 dataset_B=dataset_B,
                 join_algorithm=join_fn,
-                threshold=THRESHOLD,
-                batch_size=batch_size,
                 self_join=self_join,
                 output_dir=OUTPUT_DIR,
                 method_name=method_name,
+                params=PARAMS,
             )
         elapsed = time.perf_counter() - t0
 
@@ -105,14 +117,13 @@ def main():
             "method": method_name,
             "pair_count": total_pairs,
             "time_s": elapsed,
-            "threshold": THRESHOLD,
-            "batch_size": batch_size,
             "n_tiles": n_tiles,
             "total_pairs_compared": pairs_compared,
             "self_join": self_join,
             "N": dataset_A.shape[0],
             "M": dataset_B.shape[0],
             "D": int(dataset_A.shape[1]),
+            "params": PARAMS.to_dict(),
         }
         
         # Merge any extra batch statistics (e.g. cuvs index build_time_s)

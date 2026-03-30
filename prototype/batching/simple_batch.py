@@ -11,26 +11,18 @@ import numpy as np
 from cupyx.profiler import time_range
 
 
-def simple_batch(dataset_A, dataset_B, join_algorithm, threshold,
-                 batch_size, self_join, output_dir, method_name):
+def simple_batch(dataset_A, dataset_B, join_algorithm, self_join,
+                 output_dir, method_name, params):
     """Run a join algorithm over tiled batch pairs, writing results to disk.
 
-    Pure batching — no timing or metadata. The caller (benchmark.py) is
-    responsible for instrumentation.
-
-    Args:
-        dataset_A: numpy float32 array, shape (N, d).
-        dataset_B: numpy float32 array, shape (M, d).
-        join_algorithm: Callable(chunk_A, chunk_B, threshold, self_join_diagonal) -> (a_idx, b_idx, dists).
-        threshold: Distance threshold to pass to join_algorithm.
-        batch_size: Number of vectors per tile.
-        self_join: If True, only compute upper-triangle tiles (j >= i).
-        output_dir: Root output directory.
-        method_name: Subdirectory name for this method's results.
+    All algorithm parameters (threshold, batch_size) are read from params.
 
     Returns:
-        (result_dir, total_pairs, n_tiles, total_pairs_compared)
+        (result_dir, total_pairs, n_tiles, total_pairs_compared, batch_metadata)
     """
+    threshold = params.threshold
+    batch_size = params.batch_sizes[method_name]
+
     N = dataset_A.shape[0]
     M = dataset_B.shape[0]
 
@@ -65,7 +57,8 @@ def simple_batch(dataset_A, dataset_B, join_algorithm, threshold,
                 with time_range(f"batch/tile_{n_tiles}", color_id=6):
                     result = join_algorithm(
                         chunk_A, chunk_B, threshold,
-                        self_join_diagonal=is_diagonal
+                        self_join_diagonal=is_diagonal,
+                        params=params,
                     )
                 
                 if len(result) == 4:

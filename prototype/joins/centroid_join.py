@@ -4,7 +4,7 @@ from cupyx.profiler import time_range
 import numpy as np
 import rmm
 from cuvs.cluster import kmeans
-from cuvs.neighbors import brute_force
+from cuvs.neighbors import brute_force, ivf_flat
 
 @cp.fuse()
 def _fused_l2_dist(dot_product, q_norms, a_norms):
@@ -12,16 +12,23 @@ def _fused_l2_dist(dot_product, q_norms, a_norms):
     d = q_norms - 2.0 * dot_product + a_norms
     return cp.maximum(d, 0.0)
 
-def centroid_join(chunk_A, chunk_B, threshold, self_join_diagonal=False, n_clusters=1024, k_db_candidates=8192):
+def centroid_join(chunk_A, chunk_B, threshold, self_join_diagonal=False, params=None):
     """
     Centroid based similarity join logic.
     Run on a single pair of chunks (A and B).
+
+    Algorithm-specific parameters are read from params.centroid_join
+    (n_clusters, k_db_candidates).
     """
     if len(chunk_A) == 0 or len(chunk_B) == 0:
         return (np.empty(0, dtype=np.int64),
                 np.empty(0, dtype=np.int64),
                 np.empty(0, dtype=np.float32),
                 {})
+
+    n_clusters = params.centroid_join.n_clusters
+    k_db_candidates = params.centroid_join.k_db_candidates
+    use_ivf = params.centroid_join.use_ivf
 
     with time_range("centroid_join", color_id=0):
         # Prevent RMM pool from hoarding GPU memory (kmeans grows the pool
@@ -34,14 +41,12 @@ def centroid_join(chunk_A, chunk_B, threshold, self_join_diagonal=False, n_clust
         # Need at least as many points as clusters
         n_clusters = min(n_clusters, len(q_batch))
 
-        # 1. Cluster chunk_B on a 10% random sample
         with time_range("centroid_join/kmeans_fit", color_id=1):
             cp.cuda.Stream.null.synchronize()
             t_km = time.time()
 
-            n_samples = max(n_clusters, len(q_batch) // 10)
+            n_samples = max(n_clusters, int(len(q_batch) * params.centroid_join.sample_fraction))
             if n_samples < len(q_batch):
-                # Sample uniformly without replacement
                 sample_indices = cp.random.choice(len(q_batch), size=n_samples, replace=False)
                 q_sample = q_batch[sample_indices]
             else:
@@ -65,12 +70,20 @@ def centroid_join(chunk_A, chunk_B, threshold, self_join_diagonal=False, n_clust
             cp.cuda.Stream.null.synchronize()
             t_s = time.time()
             cp.get_default_memory_pool().free_all_blocks()
-            d_index = brute_force.build(db_batch, metric="sqeuclidean")
-
-            # Search centroids against chunk_A
-            cp.get_default_memory_pool().free_all_blocks()
             k_db = min(k_db_candidates, len(db_batch))
-            _, centroid_nn = brute_force.search(d_index, centroids, k=k_db)
+
+            if use_ivf:
+                idx_params = ivf_flat.IndexParams(metric="sqeuclidean")
+                d_index = ivf_flat.build(idx_params, db_batch)
+                cp.get_default_memory_pool().free_all_blocks()
+                _, centroid_nn = ivf_flat.search(
+                    ivf_flat.SearchParams(), d_index, centroids, k_db)
+            else:
+                d_index = brute_force.build(db_batch, metric="sqeuclidean")
+                cp.get_default_memory_pool().free_all_blocks()
+                _, centroid_nn = brute_force.search(
+                    d_index, centroids, k=k_db)
+
             centroid_nn = cp.asarray(centroid_nn)
             cp.cuda.Stream.null.synchronize()
             t_search_total = time.time() - t_s
@@ -117,12 +130,18 @@ def centroid_join(chunk_A, chunk_B, threshold, self_join_diagonal=False, n_clust
             t_bruteforce_total = time.time() - t_bf
 
         with time_range("centroid_join/collect_results", color_id=5):
+            if not block_a:
+                return (np.empty(0, dtype=np.int64),
+                        np.empty(0, dtype=np.int64),
+                        np.empty(0, dtype=np.float32),
+                        {"build_time_s": t_kmeans_total + t_search_total,
+                         "pairs_compared": int(total_filter_ops)})
             cpu_a = cp.concatenate(block_a).get().astype(np.int64)
             cpu_b = cp.concatenate(block_b).get().astype(np.int64)
             cpu_d = cp.concatenate(block_d).get().astype(np.float32)
 
         extra_stats = {
-            "build_time_s": t_kmeans_total + t_search_total,
+            "build_time_s": t_kmeans_total,
             "pairs_compared": int(total_filter_ops)
         }
 

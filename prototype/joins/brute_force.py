@@ -15,7 +15,7 @@ def _fused_l2(dot, q_norms, a_norms):
     return cp.maximum(d, 0.0)
 
 
-def brute_force_join(chunk_A, chunk_B, threshold, self_join_diagonal=False):
+def brute_force_join(chunk_A, chunk_B, threshold, self_join_diagonal=False, params=None):
     """Compute threshold join between two vector batches.
 
     This is a pure compute function for a single tile. The batching layer
