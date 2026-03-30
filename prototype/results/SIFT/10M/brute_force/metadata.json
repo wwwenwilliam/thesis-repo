@@ -1,0 +1,13 @@
+{
+  "method": "brute_force",
+  "pair_count": 16694,
+  "time_s": 3401.0860000919997,
+  "threshold": 512.0,
+  "batch_size": 25000,
+  "n_tiles": 80200,
+  "total_pairs_compared": 50110624425000,
+  "self_join": true,
+  "N": 10000000,
+  "M": 10000000,
+  "D": 128
+}

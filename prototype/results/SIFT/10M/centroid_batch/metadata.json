@@ -1,0 +1,18 @@
+{
+  "method": "centroid_batch",
+  "pair_count": 16647,
+  "time_s": 127.04121111400036,
+  "threshold": 512.0,
+  "batch_size": 25000,
+  "n_tiles": 2188,
+  "total_pairs_compared": 1245620125000,
+  "self_join": true,
+  "N": 10000000,
+  "M": 10000000,
+  "D": 128,
+  "cluster_time_s": 21.35295820236206,
+  "n_clusters": 400,
+  "scheduled_tiles": 2188,
+  "total_possible_tiles": 80200,
+  "prune_ratio": 0.9727182044887781
+}

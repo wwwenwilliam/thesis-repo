@@ -1,0 +1,14 @@
+{
+  "method": "centroid_join",
+  "pair_count": 16652,
+  "time_s": 160.92820722999932,
+  "threshold": 512.0,
+  "batch_size": 1000000,
+  "n_tiles": 55,
+  "total_pairs_compared": 901120000000,
+  "self_join": true,
+  "N": 10000000,
+  "M": 10000000,
+  "D": 128,
+  "build_time_s": 73.40323901176453
+}
