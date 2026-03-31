@@ -60,8 +60,8 @@ class SimpleBatchParams:
 @dataclass
 class CentroidBatchParams:
     """Parameters for centroid_batch."""
-    sample_fraction: float = 0.25
-    centroid_threshold: float = 0.1
+    sample_fraction: float = 0.2
+    centroid_threshold: float = 512.0*10
 
 
 

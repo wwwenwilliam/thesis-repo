@@ -50,8 +50,8 @@ BASE_PARAMS = Params(
 )
 
 # ── Sweep ranges (edit these independently per method) ──────────
-CUVS_CAGRA_K_SWEEP = [64]
-CUVS_CAGRA_ITOPK_SWEEP = [2, 4, 8, 16, 32, 64]
+CUVS_CAGRA_K_SWEEP = [32, 64]
+CUVS_CAGRA_ITOPK_SWEEP = [32, 64, 128, 256, 512]
 
 CUVS_IVF_FLAT_K_SWEEP = [64, 128, 256]
 CUVS_IVF_FLAT_NLISTS_SWEEP = [128, 256, 512, 1024]

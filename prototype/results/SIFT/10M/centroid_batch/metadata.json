@@ -1,18 +1,52 @@
 {
   "method": "centroid_batch",
-  "pair_count": 16647,
-  "time_s": 127.04121111400036,
-  "threshold": 512.0,
-  "batch_size": 25000,
-  "n_tiles": 2188,
-  "total_pairs_compared": 1245620125000,
+  "pair_count": 16588,
+  "time_s": 57.187956461988506,
+  "n_tiles": 400,
+  "total_pairs_compared": 126557562500,
   "self_join": true,
   "N": 10000000,
   "M": 10000000,
   "D": 128,
-  "cluster_time_s": 21.35295820236206,
+  "params": {
+    "threshold": 512.0,
+    "batch_sizes": {
+      "brute_force": 25000,
+      "cuvs_ivf_flat": 1000000,
+      "cuvs_cagra": 1000000,
+      "cuvs_brute_force": 100000,
+      "centroid_join": 1000000,
+      "centroid_batch": 25000,
+      "centroid_centroid": 1000000
+    },
+    "brute_force": {},
+    "cuvs_cagra": {
+      "k": 64,
+      "itopk_size": 64
+    },
+    "cuvs_ivf_flat": {
+      "k": 64,
+      "n_lists": 1024,
+      "n_probes": 20
+    },
+    "cuvs_brute_force": {
+      "k": 32
+    },
+    "centroid_join": {
+      "sample_fraction": 0.2,
+      "n_clusters": 1024,
+      "k_db_candidates": 32768,
+      "use_ivf": false
+    },
+    "simple_batch": {},
+    "centroid_batch": {
+      "sample_fraction": 0.2,
+      "centroid_threshold": 5120.0
+    }
+  },
+  "cluster_time_s": 30.324849843978882,
   "n_clusters": 400,
-  "scheduled_tiles": 2188,
+  "scheduled_tiles": 400,
   "total_possible_tiles": 80200,
-  "prune_ratio": 0.9727182044887781
+  "prune_ratio": 0.9950124688279302
 }

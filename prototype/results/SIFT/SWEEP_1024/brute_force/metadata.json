@@ -1,0 +1,48 @@
+{
+  "method": "brute_force",
+  "base_method": "brute_force",
+  "pair_count": 413228,
+  "time_s": 38.313805051999225,
+  "n_tiles": 820,
+  "total_pairs_compared": 499999500000,
+  "self_join": true,
+  "N": 1000000,
+  "M": 1000000,
+  "D": 128,
+  "params": {
+    "threshold": 1024.0,
+    "batch_sizes": {
+      "brute_force": 25000,
+      "cuvs_ivf_flat": 1000000,
+      "cuvs_cagra": 1000000,
+      "cuvs_brute_force": 100000,
+      "centroid_join": 1000000,
+      "centroid_batch": 25000,
+      "centroid_centroid": 1000000
+    },
+    "brute_force": {},
+    "cuvs_cagra": {
+      "k": 64,
+      "itopk_size": 64
+    },
+    "cuvs_ivf_flat": {
+      "k": 64,
+      "n_lists": 1024,
+      "n_probes": 20
+    },
+    "cuvs_brute_force": {
+      "k": 32
+    },
+    "centroid_join": {
+      "sample_fraction": 0.2,
+      "n_clusters": 1024,
+      "k_db_candidates": 32768,
+      "use_ivf": false
+    },
+    "simple_batch": {},
+    "centroid_batch": {
+      "sample_fraction": 0.25,
+      "centroid_threshold": 0.1
+    }
+  }
+}

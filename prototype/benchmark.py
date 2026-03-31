@@ -29,14 +29,14 @@ from util.process_results import process_results, dump_statistics
 # ── Configuration ───────────────────────────────────────────────
 DATASET_A_PATH = "/home/william/thesis_ws/thesis-repo/datasets/sift/bigann_learn.bvecs"
 DATASET_A_FMT  = "bvecs"
-NUM_VECTORS_A  = 1_000_000
+NUM_VECTORS_A  = 10_000_000
 
 DATASET_B_PATH = ""            # leave empty for self-join
 DATASET_B_FMT  = "bvecs"
 NUM_VECTORS_B  = 1_000_000
 
-OUTPUT_DIR   = "./results/SIFT/SWEEP/80"  ## target ~80% recall
-METHODS      = ["brute_force", "cuvs_ivf_flat", "centroid_join", "cuvs_cagra"]
+OUTPUT_DIR   = "./results/SIFT/10M"
+METHODS      = ["brute_force", "cuvs_ivf_flat", "centroid_join", "centroid_batch", "centroid_centroid"]
 
 # ── Unified parameters ──────────────────────────────────────────
 PARAMS = Params(
