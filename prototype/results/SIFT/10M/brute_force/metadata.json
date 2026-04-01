@@ -1,15 +1,15 @@
 {
   "method": "brute_force",
-  "pair_count": 16694,
-  "time_s": 3385.798846738995,
+  "pair_count": 427617,
+  "time_s": 4039.443287416012,
   "n_tiles": 80200,
-  "total_pairs_compared": 50110624425000,
+  "total_pairs_compared": 50015308112500,
   "self_join": true,
   "N": 10000000,
   "M": 10000000,
   "D": 128,
   "params": {
-    "threshold": 512.0,
+    "threshold": 1024.0,
     "batch_sizes": {
       "brute_force": 25000,
       "cuvs_ivf_flat": 1000000,
@@ -41,7 +41,7 @@
     "simple_batch": {},
     "centroid_batch": {
       "sample_fraction": 0.2,
-      "centroid_threshold": 5120.0
+      "centroid_threshold": 10240.0
     }
   }
 }

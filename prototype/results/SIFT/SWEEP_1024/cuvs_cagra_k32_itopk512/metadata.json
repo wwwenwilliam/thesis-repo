@@ -1,8 +1,8 @@
 {
   "method": "cuvs_cagra_k32_itopk512",
   "base_method": "cuvs_cagra",
-  "pair_count": 149204,
-  "time_s": 45.53100027900655,
+  "pair_count": 149210,
+  "time_s": 45.501799783000024,
   "n_tiles": 1,
   "total_pairs_compared": 32000000,
   "self_join": true,
@@ -40,15 +40,15 @@
     },
     "centroid_join": {
       "sample_fraction": 0.2,
-      "n_clusters": 1024,
-      "k_db_candidates": 32768,
+      "n_clusters": 512,
+      "k_db_candidates": 16384,
       "use_ivf": false
     },
     "simple_batch": {},
     "centroid_batch": {
-      "sample_fraction": 0.25,
-      "centroid_threshold": 0.1
+      "sample_fraction": 0.2,
+      "centroid_threshold": 75000.0
     }
   },
-  "build_time_s": 17.769044876098633
+  "build_time_s": 17.709108591079712
 }

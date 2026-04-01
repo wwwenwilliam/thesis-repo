@@ -27,21 +27,19 @@ from joins.centroid_join import centroid_join
 from util.process_results import process_results, dump_statistics
 
 # ── Configuration ───────────────────────────────────────────────
-DATASET_A_PATH = "/home/william/thesis_ws/thesis-repo/datasets/sift/bigann_learn.bvecs"
-DATASET_A_FMT  = "bvecs"
+DATASET_A_PATH = "/home/william/thesis_ws/thesis-repo/datasets/SimSearch/FB_ssnpp_database.u8bin"
+DATASET_A_FMT  = "u8bin"
 NUM_VECTORS_A  = 10_000_000
 
 DATASET_B_PATH = ""            # leave empty for self-join
 DATASET_B_FMT  = "bvecs"
 NUM_VECTORS_B  = 1_000_000
 
-OUTPUT_DIR   = "./results/SIFT/10M"
-METHODS      = ["brute_force", "cuvs_ivf_flat", "centroid_join", "centroid_batch", "centroid_centroid"]
+OUTPUT_DIR   = "./results/SimSearch/10M"
+METHODS      = ["centroid_centroid", "centroid_batch"]
 
 # ── Unified parameters ──────────────────────────────────────────
-PARAMS = Params(
-    threshold=512.0,
-)
+PARAMS = Params()
 
 # ── Algorithm registry ──────────────────────────────────────────
 # Maps method name -> (join_fn, batch_fn)

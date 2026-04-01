@@ -357,6 +357,17 @@ def plot_centroid_nc_scaling(df, out_dir):
 # ═══════════════════════════════════════════════════════════════
 #  Figure 4 – Batching Overhead Comparison (10M Data)
 # ═══════════════════════════════════════════════════════════════
+
+DATASET_DIMS = {
+    "DEEP": 96,
+    "SIFT": 128,
+    "SimSearch": 256
+}
+
+def _format_dataset_label(ds):
+    dim = DATASET_DIMS.get(ds)
+    return f"{ds} ({dim}d)" if dim else ds
+
 def plot_batching_overhead(df, out_dir):
     if df.empty: return
     
@@ -416,12 +427,12 @@ def plot_batching_overhead(df, out_dir):
     ax_time.set_ylabel("Execution Time (s) [log scale]")
     ax_time.set_title("(a) Execution Time with Overhead")
     ax_time.set_xticks(x)
-    ax_time.set_xticklabels(datasets)
+    ax_time.set_xticklabels([_format_dataset_label(ds) for ds in datasets])
     
     ax_recall.set_ylabel("Recall")
     ax_recall.set_title("(b) Search Recall")
     ax_recall.set_xticks(x)
-    ax_recall.set_xticklabels(datasets)
+    ax_recall.set_xticklabels([_format_dataset_label(ds) for ds in datasets])
     ax_recall.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1.0))
     ax_recall.legend(frameon=True, edgecolor="#cccccc", fontsize=8)
     
@@ -467,13 +478,13 @@ def plot_all_10m(df, out_dir):
     ax_time.set_ylabel("Execution Time (s) [log scale]")
     ax_time.set_title("(a) End-to-End Search Times")
     ax_time.set_xticks(x)
-    ax_time.set_xticklabels(datasets)
+    ax_time.set_xticklabels([_format_dataset_label(ds) for ds in datasets])
     ax_time.legend(frameon=True, edgecolor="#cccccc", fontsize=8, loc="lower right")
     
     ax_recall.set_ylabel("Recall")
     ax_recall.set_title("(b) Search Recall")
     ax_recall.set_xticks(x)
-    ax_recall.set_xticklabels(datasets)
+    ax_recall.set_xticklabels([_format_dataset_label(ds) for ds in datasets])
     ax_recall.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1.0))
     ax_recall.legend(frameon=True, edgecolor="#cccccc", fontsize=8, loc="lower left")
     

@@ -43,8 +43,8 @@ class CuvsBruteForceParams:
 @dataclass
 class CentroidJoinParams:
     """Parameters for centroid_join."""
-    sample_fraction: float = 0.20
-    n_clusters: int = 1024
+    sample_fraction: float = 0.2
+    n_clusters: int = 4096
     k_db_candidates: int = 32768
     use_ivf: bool = False
 
@@ -60,8 +60,8 @@ class SimpleBatchParams:
 @dataclass
 class CentroidBatchParams:
     """Parameters for centroid_batch."""
-    sample_fraction: float = 0.2
-    centroid_threshold: float = 512.0*10
+    sample_fraction: float = 0.25
+    centroid_threshold: float = 100_000.0*0.5
 
 
 

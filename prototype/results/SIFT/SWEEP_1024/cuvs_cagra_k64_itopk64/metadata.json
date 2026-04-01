@@ -1,8 +1,8 @@
 {
   "method": "cuvs_cagra_k64_itopk64",
   "base_method": "cuvs_cagra",
-  "pair_count": 232390,
-  "time_s": 20.716710690998298,
+  "pair_count": 232391,
+  "time_s": 21.494748010998592,
   "n_tiles": 1,
   "total_pairs_compared": 64000000,
   "self_join": true,
@@ -19,6 +19,11 @@
       "centroid_join": 1000000,
       "centroid_batch": 25000,
       "centroid_centroid": 1000000,
+      "cuvs_cagra_k32_itopk32": 1000000,
+      "cuvs_cagra_k32_itopk64": 1000000,
+      "cuvs_cagra_k32_itopk128": 1000000,
+      "cuvs_cagra_k32_itopk256": 1000000,
+      "cuvs_cagra_k32_itopk512": 1000000,
       "cuvs_cagra_k64_itopk64": 1000000
     },
     "brute_force": {},
@@ -36,15 +41,15 @@
     },
     "centroid_join": {
       "sample_fraction": 0.2,
-      "n_clusters": 1024,
-      "k_db_candidates": 32768,
+      "n_clusters": 512,
+      "k_db_candidates": 16384,
       "use_ivf": false
     },
     "simple_batch": {},
     "centroid_batch": {
-      "sample_fraction": 0.25,
-      "centroid_threshold": 0.1
+      "sample_fraction": 0.2,
+      "centroid_threshold": 75000.0
     }
   },
-  "build_time_s": 17.058738946914673
+  "build_time_s": 18.060905933380127
 }

@@ -1,15 +1,15 @@
 {
   "method": "centroid_batch",
-  "pair_count": 16588,
-  "time_s": 57.187956461988506,
+  "pair_count": 427074,
+  "time_s": 53.314995002001524,
   "n_tiles": 400,
-  "total_pairs_compared": 126557562500,
+  "total_pairs_compared": 124995000000,
   "self_join": true,
   "N": 10000000,
   "M": 10000000,
   "D": 128,
   "params": {
-    "threshold": 512.0,
+    "threshold": 1024.0,
     "batch_sizes": {
       "brute_force": 25000,
       "cuvs_ivf_flat": 1000000,
@@ -34,17 +34,17 @@
     },
     "centroid_join": {
       "sample_fraction": 0.2,
-      "n_clusters": 1024,
-      "k_db_candidates": 32768,
+      "n_clusters": 512,
+      "k_db_candidates": 16384,
       "use_ivf": false
     },
     "simple_batch": {},
     "centroid_batch": {
       "sample_fraction": 0.2,
-      "centroid_threshold": 5120.0
+      "centroid_threshold": 1024.0
     }
   },
-  "cluster_time_s": 30.324849843978882,
+  "cluster_time_s": 26.322888374328613,
   "n_clusters": 400,
   "scheduled_tiles": 400,
   "total_possible_tiles": 80200,

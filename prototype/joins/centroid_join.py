@@ -47,6 +47,8 @@ def centroid_join(chunk_A, chunk_B, threshold, self_join_diagonal=False, params=
 
             n_samples = max(n_clusters, int(len(q_batch) * params.centroid_join.sample_fraction))
             if n_samples < len(q_batch):
+                # Ensure deterministic sampling for this dataset pair
+                cp.random.seed(42)
                 sample_indices = cp.random.choice(len(q_batch), size=n_samples, replace=False)
                 q_sample = q_batch[sample_indices]
             else:

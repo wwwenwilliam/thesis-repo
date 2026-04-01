@@ -1,7 +1,7 @@
 {
   "method": "cuvs_ivf_flat",
-  "pair_count": 16694,
-  "time_s": 980.908249553002,
+  "pair_count": 427613,
+  "time_s": 981.353035712993,
   "n_tiles": 55,
   "total_pairs_compared": 3520000000,
   "self_join": true,
@@ -9,7 +9,7 @@
   "M": 10000000,
   "D": 128,
   "params": {
-    "threshold": 512.0,
+    "threshold": 1024.0,
     "batch_sizes": {
       "brute_force": 25000,
       "cuvs_ivf_flat": 1000000,
@@ -41,8 +41,8 @@
     "simple_batch": {},
     "centroid_batch": {
       "sample_fraction": 0.2,
-      "centroid_threshold": 5120.0
+      "centroid_threshold": 10240.0
     }
   },
-  "build_time_s": 19.824748516082764
+  "build_time_s": 19.688501596450806
 }

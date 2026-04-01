@@ -1,8 +1,8 @@
 {
   "method": "cuvs_ivf_flat_k64_nl512_np16",
   "base_method": "cuvs_ivf_flat",
-  "pair_count": 232395,
-  "time_s": 27.803535556005954,
+  "pair_count": 232377,
+  "time_s": 27.7683010220062,
   "n_tiles": 1,
   "total_pairs_compared": 64000000,
   "self_join": true,
@@ -19,7 +19,15 @@
       "centroid_join": 1000000,
       "centroid_batch": 25000,
       "centroid_centroid": 1000000,
+      "cuvs_cagra_k32_itopk32": 1000000,
+      "cuvs_cagra_k32_itopk64": 1000000,
+      "cuvs_cagra_k32_itopk128": 1000000,
+      "cuvs_cagra_k32_itopk256": 1000000,
+      "cuvs_cagra_k32_itopk512": 1000000,
       "cuvs_cagra_k64_itopk64": 1000000,
+      "cuvs_cagra_k64_itopk128": 1000000,
+      "cuvs_cagra_k64_itopk256": 1000000,
+      "cuvs_cagra_k64_itopk512": 1000000,
       "cuvs_ivf_flat_k64_nl128_np2": 1000000,
       "cuvs_ivf_flat_k64_nl128_np4": 1000000,
       "cuvs_ivf_flat_k64_nl128_np8": 1000000,
@@ -52,15 +60,15 @@
     },
     "centroid_join": {
       "sample_fraction": 0.2,
-      "n_clusters": 1024,
-      "k_db_candidates": 32768,
+      "n_clusters": 512,
+      "k_db_candidates": 16384,
       "use_ivf": false
     },
     "simple_batch": {},
     "centroid_batch": {
-      "sample_fraction": 0.25,
-      "centroid_threshold": 0.1
+      "sample_fraction": 0.2,
+      "centroid_threshold": 75000.0
     }
   },
-  "build_time_s": 0.2995302677154541
+  "build_time_s": 0.31296229362487793
 }
